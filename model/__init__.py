@@ -514,3 +514,9 @@ def set_qmodel_block_aqbit(model, out_mode):
         if isinstance(module, QuantizedBlock):
             # print(name)
             module.out_mode = out_mode
+
+def set_qmodel_block_wqbit(model, out_mode):
+    for name, module in model.named_modules():
+        if isinstance(module, QuantizedBlock):
+            print(name)
+            module.out_mode = out_mode
