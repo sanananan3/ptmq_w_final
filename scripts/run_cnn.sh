@@ -1,0 +1,1 @@
+python run_ptmq.py -m mobilenet_v2 -w 3 -al 6 -am 7 -ah 8 -lr 4e-3 -i 100
