@@ -1,4 +1,3 @@
-
 import torch
 import torch.nn as nn
 import torchvision
@@ -64,7 +63,7 @@ def quantize_model(model, config):
                 setattr(
                     module,
                     name,
-                    QuantizedLayer(child_module, None, config, qoutput=tmp_qoutput),
+                    QuantizedLayer(child_module, None, config, w_qconfig=config.quant.w_qconfig,  qoutput=tmp_qoutput),
                 )
                 prev_qmodule = getattr(module, name)
             elif isinstance(child_module, (nn.ReLU, nn.ReLU6, nn.GELU)):
