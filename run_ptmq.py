@@ -1,3 +1,4 @@
+
 import torch
 import torch.nn as nn
 import torchvision
@@ -153,7 +154,7 @@ def main(config_path):
         config.quant.a_qconfig_high.observer = args.observer
     
     print(f"Model: {config.model.type}")
-    print(f"W{config.quant.w_qconfig.bit}A{config.quant.a_qconfig_low.bit}{config.quant.a_qconfig_med.bit}{config.quant.a_qconfig_high.bit}")
+    print(f"W{config.quant.w_qconfig_low.bit}{config.quant.w_qconfig_med.bit}{config.quant.w_qconfig_high.bit}A{config.quant.a_qconfig_med.bit}")
     print(f"Scale learning rate: {config.quant.recon.scale_lr}")
     print(f"Reconstruction iterations: {config.quant.recon.iters}")
     print(f"Observer type: {config.quant.a_qconfig.observer}")
