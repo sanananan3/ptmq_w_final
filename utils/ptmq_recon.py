@@ -12,8 +12,8 @@ from quant.fake_quant import LSQFakeQuantize, LSQPlusFakeQuantize, QuantizeBase
 
 logger = logging.getLogger("ptmq")
 
-CONFIG_PATH = 'config/gpu_config.yaml'
-cfg = parse_config(CONFIG_PATH)
+# CONFIG_PATH = 'config/gpu_config.yaml'
+# cfg = parse_config(CONFIG_PATH)
 
 # wandb.init(
 #     # set the wandb project where this run will be logged

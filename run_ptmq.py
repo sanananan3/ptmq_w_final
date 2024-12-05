@@ -279,7 +279,7 @@ def main(config_path):
         set_qmodel_block_wqbit(model, w_qmode)
 
         print(
-            f"Starting model evaluation of W{w_qbit}A{a_qbit} block reconstruction ({a_qmode})..."
+            f"Starting model evaluation of W{w_qbit}A{a_qbit} block reconstruction ({w_qmode})..."
         )
         acc1, acc5 = eval_utils.validate_model(val_loader, model)
 
@@ -309,25 +309,25 @@ if __name__ == "__main__":
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
     )
     parser.add_argument(
-        "-c", "--config", default="config/resnet18.yaml", type=str, help="Path to config file"
+        "-c", "--config", default="config/mobilenetv2.yaml", type=str, help="Path to config file"
     )
     parser.add_argument(
-        "-m", "--model", default="resnet18", type=str, help="Model to be quantized"
+        "-m", "--model", default="mobilenetv2", type=str, help="Model to be quantized"
     )
     parser.add_argument(
         "-w", "--w_bit", default=8, type=int, help="Weight bitwidth for quantization"
     )
     parser.add_argument(
-        "-a", "--a_bit", default=8, type=int, help="Activation bitwidth for quantization"
+        "-a", "--a_bit", default=3, type=int, help="Activation bitwidth for quantization"
     )
     parser.add_argument(
-        "-al", "--a_bit_low", default=6, type=int, help="Activation bitwidth for quantization"
+        "-wl", "--w_bit_low", default=3, type=int, help="Weight bitwidth for quantization"
     )
     parser.add_argument(
-        "-am", "--a_bit_med", default=3, type=int, help="Activation bitwidth for quantization"
+        "-wm", "--w_bit_med", default=6, type=int, help="Weight bitwidth for quantization"
     ) # 이 부분 고치기 
     parser.add_argument(
-        "-ah", "--a_bit_high", default=8, type=int, help="Activation bitwidth for quantization"
+        "-wh", "--w_bit_high", default=8, type=int, help="Weight bitwidth for quantization"
     )
     parser.add_argument(
         "-lr", "--scale_lr", default=4e-5, type=float, help="Learning rate for scale"
