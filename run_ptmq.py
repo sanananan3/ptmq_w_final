@@ -136,21 +136,21 @@ def main(config_path):
         config.quant.w_qconfig.bit = args.w_bit
     if args.a_bit:
         config.quant.a_qconfig.bit = args.a_bit
-    if args.a_bit_low:
-        config.quant.a_qconfig_low.bit = args.a_bit_low
-    if args.a_bit_med:
-        config.quant.a_qconfig_med.bit = args.a_bit_med
-    if args.a_bit_high:
-        config.quant.a_qconfig_high.bit = args.a_bit_high
+    if args.w_bit_low:
+        config.quant.w_qconfig_low.bit = args.w_bit_low
+    if args.w_bit_med:
+        config.quant.w_qconfig_med.bit = args.w_bit_med
+    if args.w_bit_high:
+        config.quant.w_qconfig_high.bit = args.w_bit_high
     if args.scale_lr:
         config.quant.recon.scale_lr = args.scale_lr
     if args.recon_iter:
         config.quant.recon.iters = args.recon_iter
     if args.observer:
         config.quant.a_qconfig.observer = args.observer
-        config.quant.a_qconfig_low.observer = args.observer
-        config.quant.a_qconfig_med.observer = args.observer
-        config.quant.a_qconfig_high.observer = args.observer
+        config.quant.w_qconfig_low.observer = args.observer
+        config.quant.w_qconfig_med.observer = args.observer
+        config.quant.w_qconfig_high.observer = args.observer
     
     print(f"Model: {config.model.type}")
     print(f"W{config.quant.w_qconfig_low.bit}{config.quant.w_qconfig_med.bit}{config.quant.w_qconfig_high.bit}A{config.quant.a_qconfig_med.bit}")
