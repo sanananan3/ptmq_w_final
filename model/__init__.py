@@ -447,7 +447,7 @@ quant_modules = {
     Bottleneck: QuantBottleneck,
     ResBottleneckBlock: QuantResBottleneckBlock,
     InvertedResidual: QuantInvertedResidual,
-    _InvertedResidual: _QuantInvertedResidual,
+   # _InvertedResidual: _QuantInvertedResidual,
     VITBlock: QuantVITBlock,
 }
 
