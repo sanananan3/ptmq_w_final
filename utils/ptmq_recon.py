@@ -12,8 +12,8 @@ from quant.fake_quant import LSQFakeQuantize, LSQPlusFakeQuantize, QuantizeBase
 
 logger = logging.getLogger("ptmq")
 
-# CONFIG_PATH = 'config/gpu_config.yaml'
-# cfg = parse_config(CONFIG_PATH)
+CONFIG_PATH = 'config/gpu_config.yaml'
+cfg = parse_config(CONFIG_PATH)
 
 # wandb.init(
 #     # set the wandb project where this run will be logged
@@ -230,7 +230,7 @@ def ptmq_reconstruction(
 ):
     # get model name as a string from the model
     model_name = fp_model.__class__.__name__
-    wandb.run.name = f"{model_name}_lr{qconfig.recon.scale_lr}_iters{qconfig.recon.iters}"
+    #wandb.run.name = f"{model_name}_lr{qconfig.recon.scale_lr}_iters{qconfig.recon.iters}"
     
     device = next(q_module.parameters()).device
 

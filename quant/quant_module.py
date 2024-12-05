@@ -251,7 +251,7 @@ def Quantizer(module, config, w_qconfig = None):
     if module_type in module_type_to_quant_weight:
         kwargs = get_module_args(module)
         qmodule = module_type_to_quant_weight[module_type](
-            **kwargs, w_qconfig=config.quant.w_qconfig
+            **kwargs, w_qconfig=w_qconfig
         )
         qmodule.weight.data = module.weight.data.clone()
         if getattr(module, "bias", None) is not None:

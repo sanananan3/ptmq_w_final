@@ -261,10 +261,10 @@ def main(config_path):
                config.quant.w_qconfig_high, 
                ]
 
-    # save ptmq model
-    torch.save(
-        model.state_dict(), f"ptmq_w{a_qbit}_a{w_qbits[0]}{w_qbits[1]}{w_qbits[2]}.pth"
-    )
+    # # save ptmq model
+    # torch.save(
+    #     model.state_dict(), f"ptmq_w{w_qbits[0]}{w_qbits[1]}{w_qbits[2]}_a{a_qbit}.pth"
+    # )
 
     enable_quantization(model)
 

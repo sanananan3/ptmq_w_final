@@ -260,7 +260,7 @@ class QuantInvertedResidual(QuantizedBlock):
                 QuantizedLayer(orig_module.conv[6], None, config, w_qconfig=config.quant.w_qconfig_high, qoutput=False),
             )
 
-            if self.qoutput:
+        if self.qoutput:
 
                 self.block_post_act_fake_quantize_med = Quantizer(
                     None, config.quant.a_qconfig_med
@@ -270,7 +270,7 @@ class QuantInvertedResidual(QuantizedBlock):
                 self.lambda1, self.lambda2, self.lambda3 = config.quant.ptmq.lambda1,  config.quant.ptmq.lambda2,  config.quant.ptmq.lambda3
                 self.mixed_p = config.quant.ptmq.mixed_p
 
-            else:
+        else:
                 self.block_post_act_fake_quantize_med = None
                 self.f_l, self.f_m, self.f_h, self.f_lmh = None, None, None, None
                 self.lambda1, self.lambda2, self.lambda3 = config.quant.ptmq.lambda1,  config.quant.ptmq.lambda2,  config.quant.ptmq.lambda3
