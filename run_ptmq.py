@@ -25,7 +25,7 @@ import utils
 import utils.eval_utils as eval_utils
 from utils.ptmq_recon import ptmq_reconstruction
 from utils.fold_bn import search_fold_and_remove_bn, StraightThrough
-from model import quant_modules, load_model, set_qmodel_block_aqbit
+from model import quant_modules, load_model, set_qmodel_block_wqbit
 from quant.quant_state import (
     enable_calib_without_quant,
     enable_quantization,
@@ -63,7 +63,7 @@ def quantize_model(model, config):
                 setattr(
                     module,
                     name,
-                    QuantizedLayer(child_module, None, config, qoutput=tmp_qoutput),
+                    QuantizedLayer(child_module, None, config, w_qconfig=config.quant.w_qconfig,  qoutput=tmp_qoutput),
                 )
                 prev_qmodule = getattr(module, name)
             elif isinstance(child_module, (nn.ReLU, nn.ReLU6, nn.GELU)):
@@ -153,7 +153,7 @@ def main(config_path):
         config.quant.a_qconfig_high.observer = args.observer
     
     print(f"Model: {config.model.type}")
-    print(f"W{config.quant.w_qconfig.bit}A{config.quant.a_qconfig_low.bit}{config.quant.a_qconfig_med.bit}{config.quant.a_qconfig_high.bit}")
+    print(f"W{config.quant.w_qconfig_low.bit}{config.quant.w_qconfig_med.bit}{config.quant.w_qconfig_high.bit}A{config.quant.a_qconfig_med.bit}")
     print(f"Scale learning rate: {config.quant.recon.scale_lr}")
     print(f"Reconstruction iterations: {config.quant.recon.iters}")
     print(f"Observer type: {config.quant.a_qconfig.observer}")
@@ -254,17 +254,16 @@ def main(config_path):
     print("Completed block reconstruction")
     print(f"PTMQ block reconstruction took {tok - tik:.2f} seconds")
 
-    a_qmodes = ["low", "med", "high"]
-    w_qbit = config.quant.w_qconfig.bit
-    a_qbits = [
-        config.quant.a_qconfig_low.bit,
-        config.quant.a_qconfig_med.bit,
-        config.quant.a_qconfig_high.bit,
-    ]
+    w_qmodes = ["low", "med", "high"]
+    a_qbit = config.quant.a_qconfig_med.bit,
+    w_qbits = [config.quant.w_qconfig_low, 
+               config.quant.w_qconfig_med, 
+               config.quant.w_qconfig_high, 
+               ]
 
     # save ptmq model
     torch.save(
-        model.state_dict(), f"ptmq_w{w_qbit}_a{a_qbits[0]}{a_qbits[1]}{a_qbits[2]}.pth"
+        model.state_dict(), f"ptmq_w{a_qbit}_a{w_qbits[0]}{w_qbits[1]}{w_qbits[2]}.pth"
     )
 
     enable_quantization(model)
@@ -273,11 +272,11 @@ def main(config_path):
     #     if isinstance(module, QuantizeBase):
     #         print(name, "\t", module.observer_enabled, "\t", module.fake_quant_enabled)
 
-    for a_qmode, a_qbit in zip(a_qmodes, a_qbits):
+    for w_qmode, w_qbit in zip(w_qmodes, w_qbits):
         # if a_qbit < w_qbit:
         #     continue
         
-        set_qmodel_block_aqbit(model, a_qmode)
+        set_qmodel_block_wqbit(model, w_qmode)
 
         print(
             f"Starting model evaluation of W{w_qbit}A{a_qbit} block reconstruction ({a_qmode})..."
@@ -325,8 +324,8 @@ if __name__ == "__main__":
         "-al", "--a_bit_low", default=6, type=int, help="Activation bitwidth for quantization"
     )
     parser.add_argument(
-        "-am", "--a_bit_med", default=7, type=int, help="Activation bitwidth for quantization"
-    )
+        "-am", "--a_bit_med", default=3, type=int, help="Activation bitwidth for quantization"
+    ) # 이 부분 고치기 
     parser.add_argument(
         "-ah", "--a_bit_high", default=8, type=int, help="Activation bitwidth for quantization"
     )

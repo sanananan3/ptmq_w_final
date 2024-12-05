@@ -46,11 +46,14 @@ def ActivationQuantizer(a_qconfig):
 
 
 def WeightQuantizer(w_qconfig):
+    if w_qconfig is None:
+        raise ValueError("w_qconfig가 None입니다. 올바른 설정을 전달해야 합니다.")
+
     return FakeQuantizeDict[w_qconfig.quantizer](
         ObserverDict[w_qconfig.observer],
         bit=w_qconfig.bit,
         symmetric=w_qconfig.symmetric,
-        ch_axis=w_qconfig.ch_axis,
+        ch_axis=w_qconfig.ch_axis
     )
 
 
@@ -244,14 +247,14 @@ def get_module_args(module):
         raise NotImplementedError
 
 
-def Quantizer(module, config):
+def Quantizer(module, config, w_qconfig=None):
     if module is None:
         return ActivationQuantizer(a_qconfig=config)
     module_type = type(module)
     if module_type in module_type_to_quant_weight:
         kwargs = get_module_args(module)
         qmodule = module_type_to_quant_weight[module_type](
-            **kwargs, w_qconfig=config.quant.w_qconfig
+            **kwargs, w_qconfig=w_qconfig
         )
         qmodule.weight.data = module.weight.data.clone()
         if getattr(module, "bias", None) is not None:

@@ -221,135 +221,98 @@ class QuantResBottleneckBlock(QuantizedBlock):
 
 
 class QuantInvertedResidual(QuantizedBlock):
-    """
-    Implementation of Quantized Inverted Residual Block used in MobileNetV2.
-    Inverted Residual does not have activation function.
-    """
-    def __init__(self, org_module: InvertedResidual, config, qoutput=True, out_mode="calib"):
+    def __init__ (
+            self, orig_module: InvertedResidual, config, qoutput = True, out_mode = "calib"
+    ):
         super().__init__()
+        self.out_mode = out_mode 
         self.qoutput = qoutput
-        self.out_mode = out_mode
-        
-        self.use_res_connect = org_module.use_res_connect
-        if org_module.expand_ratio == 1:
-            self.conv = nn.Sequential(
-                QuantizedLayer(org_module.conv[0], org_module.conv[2], config),
-                QuantizedLayer(org_module.conv[3], None, config, qoutput=False),
+        self.use_res_connect = orig_module.use_res_connect
+
+       
+        if orig_module.expand_ratio == 1:
+            self.conv_low = nn.Sequential(
+                QuantizedLayer(orig_module.conv[0], orig_module.conv[2], config, w_qconfig=config.quant.w_qconfig_low),
+                QuantizedLayer(orig_module.conv[3], None, config, w_qconfig=config.quant.w_qconfig_low, qoutput=False),
+            )
+            self.conv_med = nn.Sequential(
+                QuantizedLayer(orig_module.conv[0], orig_module.conv[2], config, w_qconfig=config.quant.w_qconfig_med),
+                QuantizedLayer(orig_module.conv[3], None, config, w_qconfig=config.quant.w_qconfig_med, qoutput=False),
+            )
+            self.conv_high = nn.Sequential(
+                QuantizedLayer(orig_module.conv[0], orig_module.conv[2], config, w_qconfig=config.quant.w_qconfig_high),
+                QuantizedLayer(orig_module.conv[3], None, config, w_qconfig=config.quant.w_qconfig_high, qoutput=False),
             )
         else:
-            self.conv = nn.Sequential(
-                QuantizedLayer(org_module.conv[0], org_module.conv[2], config),
-                QuantizedLayer(org_module.conv[3], org_module.conv[5], config),
-                QuantizedLayer(org_module.conv[6], None, config, qoutput=False),
+            self.conv_low = nn.Sequential(
+                QuantizedLayer(orig_module.conv[0], orig_module.conv[2], config, w_qconfig=config.quant.w_qconfig_low),
+                QuantizedLayer(orig_module.conv[3], orig_module.conv[5], config,w_qconfig=config.quant.w_qconfig_low),
+                QuantizedLayer(orig_module.conv[6], None, config, w_qconfig=config.quant.w_qconfig_low, qoutput=False),
             )
-        
-        if self.qoutput:
-            self.block_post_act_fake_quantize_low = Quantizer(None, config.quant.a_qconfig_low)
-            self.block_post_act_fake_quantize_med = Quantizer(None, config.quant.a_qconfig_med)
-            self.block_post_act_fake_quantize_high = Quantizer(None, config.quant.a_qconfig_high)
+            self.conv_med = nn.Sequential(
+                QuantizedLayer(orig_module.conv[0], orig_module.conv[2], config, w_qconfig=config.quant.w_qconfig_med),
+                QuantizedLayer(orig_module.conv[3], orig_module.conv[5], config, w_qconfig=config.quant.w_qconfig_med),
+                QuantizedLayer(orig_module.conv[6], None, config, w_qconfig=config.quant.w_qconfig_med, qoutput=False),
+            )     
+            self.conv_high = nn.Sequential(
+                QuantizedLayer(orig_module.conv[0], orig_module.conv[2], config, w_qconfig=config.quant.w_qconfig_high),
+                QuantizedLayer(orig_module.conv[3], orig_module.conv[5], config, w_qconfig=config.quant.w_qconfig_high),
+                QuantizedLayer(orig_module.conv[6], None, config, w_qconfig=config.quant.w_qconfig_high, qoutput=False),
+            )
 
-            self.f_l = None
-            self.f_m = None
-            self.f_h = None
-            self.f_lmh = None
+            if self.qoutput:
 
-            self.lambda1 = config.quant.ptmq.lambda1
-            self.lambda2 = config.quant.ptmq.lambda2
-            self.lambda3 = config.quant.ptmq.lambda3
+                self.block_post_act_fake_quantize_med = Quantizer(
+                    None, config.quant.a_qconfig_med
+                )
 
-            self.mixed_p = config.quant.ptmq.mixed_p
-        
+                self.f_l, self.f_m, self.f_h, self.f_lmh = None, None, None, None
+                self.lambda1, self.lambda2, self.lambda3 = config.quant.ptmq.lambda1,  config.quant.ptmq.lambda2,  config.quant.ptmq.lambda3
+                self.mixed_p = config.quant.ptmq.mixed_p
+
+            else:
+                self.block_post_act_fake_quantize_med = None
+                self.f_l, self.f_m, self.f_h, self.f_lmh = None, None, None, None
+                self.lambda1, self.lambda2, self.lambda3 = config.quant.ptmq.lambda1,  config.quant.ptmq.lambda2,  config.quant.ptmq.lambda3
+                self.mixed_p = config.quant.ptmq.mixed_p
+
+
 
     def forward(self, x):
         if self.use_res_connect:
-            x = x + self.conv(x)
+            # x = x+self.conv(x)
+            out_low = x + self.conv_low(x)
+            out_mid = x + self.conv_med(x)
+            out_high = x + self.conv_high(x)
+
         else:
-            x = self.conv(x)
-        
+            #x = self.conv(x)
+            out_low = self.conv_low(x)
+            out_mid = self.conv_med(x)
+            out_high = self.conv_high(x)
+
         if self.qoutput:
             if self.out_mode == "calib":
-                self.f_l = self.block_post_act_fake_quantize_low(x)
-                self.f_m = self.block_post_act_fake_quantize_med(x)
-                self.f_h = self.block_post_act_fake_quantize_high(x)
+                
+                self.f_l = self.block_post_act_fake_quantize_med(out_low)
+                self.f_m = self.block_post_act_fake_quantize_med(out_mid)
+                self.f_h = self.block_post_act_fake_quantize_med(out_high)
 
-                self.f_lmh = (
-                    self.lambda1 * self.f_l
+                self.f_lmh = (  self.lambda1 * self.f_l
                     + self.lambda2 * self.f_m
-                    + self.lambda3 * self.f_h
-                )
-                f_mixed = torch.where(torch.rand_like(x) < self.mixed_p, x, self.f_lmh)
+                    + self.lambda3 * self.f_h)
+                
+                f_mixed = torch.where(torch.rand_like(out_mid)<self.mixed_p, out_mid, self.f_lmh)
 
-                x = f_mixed
+                x = f_mixed 
+
             elif self.out_mode == "low":
-                x = self.block_post_act_fake_quantize_low(x)
+                x = self.block_post_act_fake_quantize_med(out_low)
             elif self.out_mode == "med":
-                x = self.block_post_act_fake_quantize_med(x)
+                x = self.block_post_act_fake_quantize_med(out_mid)
             elif self.out_mode == "high":
-                x = self.block_post_act_fake_quantize_high(x)
-            else:
-                raise ValueError(
-                    f"Invalid out_mode '{self.out_mode}': only ['low', 'med', 'high'] are supported"
-                )
-        return x
-
-
-class _QuantInvertedResidual(QuantizedBlock):
-    # mnasnet
-    def __init__(self, org_module: _InvertedResidual, config, qoutput=True, out_mode="calib"):
-        super().__init__()
-        self.qoutput = qoutput
-        self.out_mode = out_mode
-        
-        self.apply_residual = org_module.apply_residual
-        self.conv = nn.Sequential(
-            QuantizedLayer(org_module.layers[0], org_module.layers[2], config),
-            QuantizedLayer(org_module.layers[3], org_module.layers[5], config),
-            QuantizedLayer(org_module.layers[6], None, config, qoutput=False),
-        )
-        
-        if self.qoutput:
-            self.block_post_act_fake_quantize_low = Quantizer(None, config.quant.a_qconfig_low)
-            self.block_post_act_fake_quantize_med = Quantizer(None, config.quant.a_qconfig_med)
-            self.block_post_act_fake_quantize_high = Quantizer(None, config.quant.a_qconfig_high)
-
-            self.f_l = None
-            self.f_m = None
-            self.f_h = None
-            self.f_lmh = None
-
-            self.lambda1 = config.quant.ptmq.lambda1
-            self.lambda2 = config.quant.ptmq.lambda2
-            self.lambda3 = config.quant.ptmq.lambda3
-
-            self.mixed_p = config.quant.ptmq.mixed_p
-
-    def forward(self, x):
-        if self.apply_residual:
-            x = x + self.conv(x)
-        else:
-            x = self.conv(x)
-        
-        if self.qoutput:
-            if self.out_mode == "calib":
-                self.f_l = self.block_post_act_fake_quantize_low(x)
-                self.f_m = self.block_post_act_fake_quantize_med(x)
-                self.f_h = self.block_post_act_fake_quantize_high(x)
-
-                self.f_lmh = (
-                    self.lambda1 * self.f_l
-                    + self.lambda2 * self.f_m
-                    + self.lambda3 * self.f_h
-                )
-                f_mixed = torch.where(torch.rand_like(x) < self.mixed_p, x, self.f_lmh)
-
-                x = f_mixed
-            elif self.out_mode == "low":
-                x = self.block_post_act_fake_quantize_low(x)
-            elif self.out_mode == "med":
-                x = self.block_post_act_fake_quantize_med(x)
-            elif self.out_mode == "high":
-                x = self.block_post_act_fake_quantize_high(x)
-            else:
+                x= self.block_post_act_fake_quantize_med(out_high)
+            else: 
                 raise ValueError(
                     f"Invalid out_mode '{self.out_mode}': only ['low', 'med', 'high'] are supported"
                 )
@@ -513,4 +476,10 @@ def set_qmodel_block_aqbit(model, out_mode):
     for name, module in model.named_modules():
         if isinstance(module, QuantizedBlock):
             # print(name)
+            module.out_mode = out_mode
+
+def set_qmodel_block_wqbit(model, out_mode):
+    for name, module in model.named_modules():
+        if isinstance(module, QuantizedBlock):
+            print(name)
             module.out_mode = out_mode

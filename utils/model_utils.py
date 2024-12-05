@@ -371,21 +371,29 @@ class QuantInvertedResidual(QuantizedBlock):
                     None, config.quant.a_qconfig_med
                 )
 
-                self.f_l, self.f_m, self.f_l, self.f_lmh = None, None, None, None
+                self.f_l, self.f_m, self.f_h, self.f_lmh = None, None, None, None
                 self.lambda1, self.lambda2, self.lambda3 = config.quant.ptmq.lambda1,  config.quant.ptmq.lambda2,  config.quant.ptmq.lambda3
                 self.mixed_p = config.quant.ptmq.mixed_p
+
+            else:
+                self.block_post_act_fake_quantize_med = None
+                self.f_l, self.f_m, self.f_h, self.f_lmh = None, None, None, None
+                self.lambda1, self.lambda2, self.lambda3 = config.quant.ptmq.lambda1,  config.quant.ptmq.lambda2,  config.quant.ptmq.lambda3
+                self.mixed_p = config.quant.ptmq.mixed_p
+
+
 
     def forward(self, x):
         if self.use_res_connect:
             # x = x+self.conv(x)
             out_low = x + self.conv_low(x)
-            out_mid = x + self.conv_mid(x)
+            out_mid = x + self.conv_med(x)
             out_high = x + self.conv_high(x)
 
         else:
             #x = self.conv(x)
             out_low = self.conv_low(x)
-            out_mid = self.conv_mid(x)
+            out_mid = self.conv_med(x)
             out_high = self.conv_high(x)
 
         if self.qoutput:

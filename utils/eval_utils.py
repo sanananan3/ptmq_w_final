@@ -89,9 +89,9 @@ def load_data(
         mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]
     )
 
-    train_dir = "../imagenet-mini/train"
+    train_dir = "/content/ptmq_w_final/imagenet/train"
     # train_dir = os.path.join(path, 'train')
-    val_dir = os.path.join(path, "val")
+    val_dir = "/content/ptmq_w_final/imagenet/val"
 
     train_transforms = transforms.Compose(
         [
