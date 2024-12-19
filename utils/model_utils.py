@@ -251,26 +251,26 @@ class QuantRegNetBottleneck(QuantizedBlock):
 
 
         # self.conv1.conv = QuantizedLayer(self.conv1.conv, orig_module.act3, config)
-        self.conv1_low.conv = QuantizedLayer(self.conv1.conv, orig_module.act3, config, w_qconfig=config.quant.w_qconfig_low),
-        self.conv1_med.conv = QuantizedLayer(self.conv1.conv, orig_module.act3, config, w_qconfig=config.quant.w_qconfig_med),
-        self.conv1_high.conv = QuantizedLayer(self.conv1.conv, orig_module.act3, config, w_qconfig=config.quant.w_qconfig_high),
+        self.conv1_low.conv = QuantizedLayer(self.conv1_low.conv, orig_module.act3, config, w_qconfig=config.quant.w_qconfig_low),
+        self.conv1_med.conv = QuantizedLayer(self.conv1_med.conv, orig_module.act3, config, w_qconfig=config.quant.w_qconfig_med),
+        self.conv1_high.conv = QuantizedLayer(self.conv1_high.conv, orig_module.act3, config, w_qconfig=config.quant.w_qconfig_high),
 
         self.conv2_low = orig_module.conv2
         self.conv2_med = orig_module.conv2
         self.conv2_high = orig_module.conv2
 
-        self.conv2_low.conv = QuantizedLayer(self.conv2.conv, orig_module.act3, config, w_qconfig=config.quant.w_qconfig_low),
-        self.conv2_med.conv = QuantizedLayer(self.conv2.conv, orig_module.act3, config, w_qconfig=config.quant.w_qconfig_med),
-        self.conv2_high.conv = QuantizedLayer(self.conv2.conv, orig_module.act3, config, w_qconfig=config.quant.w_qconfig_high),
+        self.conv2_low.conv = QuantizedLayer(self.conv2_low.conv, orig_module.act3, config, w_qconfig=config.quant.w_qconfig_low),
+        self.conv2_med.conv = QuantizedLayer(self.conv2_med.conv, orig_module.act3, config, w_qconfig=config.quant.w_qconfig_med),
+        self.conv2_high.conv = QuantizedLayer(self.conv2_high.conv, orig_module.act3, config, w_qconfig=config.quant.w_qconfig_high),
 
         
         self.conv3_low = orig_module.conv3        
         self.conv3_med = orig_module.conv3
         self.conv3_high = orig_module.conv3
 
-        self.conv3_low.conv = QuantizedLayer(self.conv3.conv, None, config, w_qconfig=config.quant.w_qconfig_low, qoutput=False),
-        self.conv3_med.conv = QuantizedLayer(self.conv3.conv, None, config, w_qconfig=config.quant.w_qconfig_med, qoutput=False),
-        self.conv3_high.conv = QuantizedLayer(self.conv3.conv, None, config, w_qconfig=config.quant.w_qconfig_high, qoutput=False),
+        self.conv3_low.conv = QuantizedLayer(self.conv3_low.conv, None, config, w_qconfig=config.quant.w_qconfig_low, qoutput=False),
+        self.conv3_med.conv = QuantizedLayer(self.conv3_med.conv, None, config, w_qconfig=config.quant.w_qconfig_med, qoutput=False),
+        self.conv3_high.conv = QuantizedLayer(self.conv3_high.conv, None, config, w_qconfig=config.quant.w_qconfig_high, qoutput=False),
 
         self.se = orig_module.se
         self.downsample= orig_module.downsample
