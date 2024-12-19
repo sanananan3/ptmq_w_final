@@ -261,11 +261,6 @@ def main(config_path):
                config.quant.w_qconfig_high, 
                ]
 
-    # # save ptmq model
-    # torch.save(
-    #     model.state_dict(), f"ptmq_w{w_qbits[0]}{w_qbits[1]}{w_qbits[2]}_a{a_qbit}.pth"
-    # )
-
     enable_quantization(model)
 
     # for name, module in model.named_modules():
@@ -273,21 +268,18 @@ def main(config_path):
     #         print(name, "\t", module.observer_enabled, "\t", module.fake_quant_enabled)
 
     for w_qmode, w_qbit in zip(w_qmodes, w_qbits):
-        # if a_qbit < w_qbit:
-        #     continue
+        set_qmodel_block_wqbit(model,w_qmode)
         
-        set_qmodel_block_wqbit(model, w_qmode)
-
-        print(
-            f"Starting model evaluation of W{w_qbit}A{a_qbit} block reconstruction ({w_qmode})..."
-        )
+        for name, module in model.named_modules():
+            if isinstance(module, QuantizedBlock):
+                print(name, module.out_mode)
+        
+        print(f"Starting model evaluation of W{w_qbit}A{a_qbit} block reconsutciotn ({w_qmode}....)")
         acc1, acc5 = eval_utils.validate_model(val_loader, model)
 
         print(f"Top-1 accuracy: {acc1:.2f}, Top-5 accuracy: {acc5:.2f}")
-        
-        # if a_qbit >= w_qbit:
-        #     # break
-        #     pass
+    #validate_model(val_loader, model) # validation 데이터 셋 이용해서 성능 평가하기 
+
 
     # print out all scale and zero_point values
     # for name, module in model.named_modules():
@@ -309,19 +301,19 @@ if __name__ == "__main__":
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
     )
     parser.add_argument(
-        "-c", "--config", default="config/mobilenetv2.yaml", type=str, help="Path to config file"
+        "-c", "--config", default="config/regnetx600.yaml", type=str, help="Path to config file"
     )
     parser.add_argument(
-        "-m", "--model", default="mobilenetv2", type=str, help="Model to be quantized"
+        "-m", "--model", default="regnet", type=str, help="Model to be quantized"
     )
     parser.add_argument(
         "-w", "--w_bit", default=8, type=int, help="Weight bitwidth for quantization"
     )
     parser.add_argument(
-        "-a", "--a_bit", default=3, type=int, help="Activation bitwidth for quantization"
+        "-a", "--a_bit", default=4, type=int, help="Activation bitwidth for quantization"
     )
     parser.add_argument(
-        "-wl", "--w_bit_low", default=3, type=int, help="Weight bitwidth for quantization"
+        "-wl", "--w_bit_low", default=4, type=int, help="Weight bitwidth for quantization"
     )
     parser.add_argument(
         "-wm", "--w_bit_med", default=6, type=int, help="Weight bitwidth for quantization"
@@ -330,10 +322,10 @@ if __name__ == "__main__":
         "-wh", "--w_bit_high", default=8, type=int, help="Weight bitwidth for quantization"
     )
     parser.add_argument(
-        "-lr", "--scale_lr", default=4e-5, type=float, help="Learning rate for scale"
+        "-lr", "--scale_lr", default=4e-4, type=float, help="Learning rate for scale"
     )
     parser.add_argument(
-        "-i", "--recon_iter", default=100, type=int, help="Number of reconstruction iterations"
+        "-i", "--recon_iter", default=5000, type=int, help="Number of reconstruction iterations"
     )
     parser.add_argument(
         "-o", "--observer", default=None, type=str, help="Observer type for quantization"
