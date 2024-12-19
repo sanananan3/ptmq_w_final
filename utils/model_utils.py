@@ -232,6 +232,7 @@ class QuantBottleneck(QuantizedBlock):
 # 3. QuantRegNetBottleneck -> regnetx-600mf /// 일단 regnet 보류 ... 
 
 
+# For RegNetX-600MF
 class QuantRegNetBottleneck(QuantizedBlock):
     """
     Implementation of Quantized Bottleneck Block used in RegNet (X, Y) models.
@@ -244,55 +245,23 @@ class QuantRegNetBottleneck(QuantizedBlock):
         self.out_mode = out_mode
         self.qoutput = qoutput
 
-        # Copy over attributes from the original module
-        self.conv1_low = orig_module.conv1
-        self.conv1_med = orig_module.conv1
-        self.conv1_high = orig_module.conv1
-
-
-        # self.conv1.conv = QuantizedLayer(self.conv1.conv, orig_module.act3, config)
-        self.conv1_low.conv = QuantizedLayer(self.conv1_low.conv, orig_module.act3, config, w_qconfig=config.quant.w_qconfig_low),
-        self.conv1_med.conv = QuantizedLayer(self.conv1_med.conv, orig_module.act3, config, w_qconfig=config.quant.w_qconfig_med),
-        self.conv1_high.conv = QuantizedLayer(self.conv1_high.conv, orig_module.act3, config, w_qconfig=config.quant.w_qconfig_high),
-
-        self.conv2_low = orig_module.conv2
-        self.conv2_med = orig_module.conv2
-        self.conv2_high = orig_module.conv2
-
-        self.conv2_low.conv = QuantizedLayer(self.conv2_low.conv, orig_module.act3, config, w_qconfig=config.quant.w_qconfig_low),
-        self.conv2_med.conv = QuantizedLayer(self.conv2_med.conv, orig_module.act3, config, w_qconfig=config.quant.w_qconfig_med),
-        self.conv2_high.conv = QuantizedLayer(self.conv2_high.conv, orig_module.act3, config, w_qconfig=config.quant.w_qconfig_high),
-
+        self.conv1_relu = QuantizedLayer(orig_module.f.a)
         
-        self.conv3_low = orig_module.conv3        
-        self.conv3_med = orig_module.conv3
-        self.conv3_high = orig_module.conv3
-
-        self.conv3_low.conv = QuantizedLayer(self.conv3_low.conv, None, config, w_qconfig=config.quant.w_qconfig_low, qoutput=False),
-        self.conv3_med.conv = QuantizedLayer(self.conv3_med.conv, None, config, w_qconfig=config.quant.w_qconfig_med, qoutput=False),
-        self.conv3_high.conv = QuantizedLayer(self.conv3_high.conv, None, config, w_qconfig=config.quant.w_qconfig_high, qoutput=False),
-
-        self.se = orig_module.se
-        self.downsample= orig_module.downsample
-
-
-        self.drop_path = orig_module.drop_path
-        self.act3 = orig_module.act3
-
         # Handle downsample layer
         if self.downsample is not None:
             if hasattr(self.downsample, "conv"):
                 self.downsample.conv = QuantizedLayer(
-                    self.downsample.conv, None, config, w_qconfig=config.quant.w_qconfig_high, qoutput=False
+                    self.downsample.conv, None, config, qoutput=False
                 )
 
         # The rest of your quantization code remains the same
+        
         if self.qoutput:
-
+  
             self.block_post_act_fake_quantize_med = Quantizer(
                 None, config.quant.a_qconfig_med
             )
-
+         
             self.f_l = None
             self.f_m = None
             self.f_h = None
@@ -305,60 +274,41 @@ class QuantRegNetBottleneck(QuantizedBlock):
             self.mixed_p = config.quant.ptmq.mixed_p
 
     def forward(self, x):
-
         shortcut = x
-        x_low = self.conv1_low(x)
-        x_med = self.conv1_med(x)
-        x_high = self.conv1_high(x)
-
-        x_low = self.conv2_low(x_low)
-        x_med = self.conv2_low(x_med)
-        x_high = self.conv2_low(x_high)
-
-
-        x_low = self.se(x_low)
-        x_med = self.se(x_med)
-        x_high = self.se(x_high)
-
-        x_low = self.conv3_low(x_low)
-        x_med = self.conv3_med(x_med)
-        x_high = self.conv3_high(x_high)
+        x = self.conv1(x)
+        x = self.conv2(x)
+        x = self.se(x)
+        x = self.conv3(x)
 
         if self.downsample is not None:
-            x_low = self.drop_path(x_low) + self.downsample(shortcut)
-            x_med = self.drop_path(x_med) + self.downsample(shortcut)
-            x_high = self.drop_path(x_high) + self.downsample(shortcut)
-
-        x_low = self.act3(x_low)
-        x_med = self.act3(x_med)
-        x_high = self.act3(x_high)
+            x = self.drop_path(x) + self.downsample(shortcut)
+        x = self.act3(x)
 
         if self.qoutput:
             if self.out_mode == "calib":
-                self.f_l = self.block_post_act_fake_quantize_med(x_low)
-                self.f_m = self.block_post_act_fake_quantize_med(x_med)
-                self.f_h = self.block_post_act_fake_quantize_med(x_high)
+                self.f_l = self.block_post_act_fake_quantize_med(x)
+                self.f_m = self.block_post_act_fake_quantize_med(x)
+                self.f_h = self.block_post_act_fake_quantize_med(x)
 
                 self.f_lmh = (
                     self.lambda1 * self.f_l
                     + self.lambda2 * self.f_m
                     + self.lambda3 * self.f_h
                 )
-                f_mixed = torch.where(torch.rand_like(x_med) < self.mixed_p, x_med, self.f_lmh)
+                f_mixed = torch.where(torch.rand_like(x) < self.mixed_p, x, self.f_lmh)
 
                 x = f_mixed
             elif self.out_mode == "low":
-                x = self.block_post_act_fake_quantize_med(x_low)
+                x = self.block_post_act_fake_quantize_med(x)
             elif self.out_mode == "med":
-                x = self.block_post_act_fake_quantize_med(x_med)
+                x = self.block_post_act_fake_quantize_med(x)
             elif self.out_mode == "high":
-                x = self.block_post_act_fake_quantize_med(x_high)
+                x = self.block_post_act_fake_quantize_med(x)
             else:
                 raise ValueError(
                     f"Invalid out_mode '{self.out_mode}': only ['low', 'med', 'high'] are supported"
                 )
         return x
-
 
 
 # 4. QuantInvertedResidual -> mobilenetv2
