@@ -304,7 +304,7 @@ if __name__ == "__main__":
         "-c", "--config", default="config/regnetx600.yaml", type=str, help="Path to config file"
     )
     parser.add_argument(
-        "-m", "--model", default="regnet", type=str, help="Model to be quantized"
+        "-m", "--model", default="regnetx_600m", type=str, help="Model to be quantized"
     )
     parser.add_argument(
         "-w", "--w_bit", default=8, type=int, help="Weight bitwidth for quantization"

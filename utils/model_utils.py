@@ -14,6 +14,7 @@ from quant.quant_module import QuantizedLayer, QuantizedBlock, Quantizer
 
 
 #from models.regnet import Bottleneck as RegNetBottleneck
+
 # 1. QuantBasicBlock -> resnet18 
 
 class QuantBasicBlock(QuantizedBlock): 
@@ -465,7 +466,7 @@ class QuantInvertedResidual(QuantizedBlock):
 quant_modules = {
     ResNetBasicBlock: QuantBasicBlock,  # For ResNet-18 and ResNet-34
     ResNetBottleneck: QuantBottleneck,  # For ResNet-50, ResNet-101, and ResNet-152
-    # RegNetBottleneck: QuantRegNetBottleneck,  # For RegNetX-600MF
+    RegNetBottleneck: QuantRegNetBottleneck,  # For RegNetX-600MF
     InvertedResidual: QuantInvertedResidual,  # For MobileNetV2
     # VITBlock: QuantVITBlock,  # For Vision Transformer
 }
